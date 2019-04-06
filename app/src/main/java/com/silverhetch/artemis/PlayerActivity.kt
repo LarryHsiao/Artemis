@@ -7,6 +7,7 @@ import android.content.ServiceConnection
 import android.graphics.Point
 import android.os.Bundle
 import android.os.IBinder
+import android.os.PersistableBundle
 import android.view.ContextMenu
 import android.view.SurfaceHolder
 import android.view.View
@@ -14,7 +15,6 @@ import android.widget.SeekBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import com.silverhetch.aura.media.AuraMediaPlayer
-import com.silverhetch.aura.media.MediaPlayerService
 import kotlinx.android.synthetic.main.activity_main.*
 
 class PlayerActivity : AppCompatActivity(), ServiceConnection {
@@ -30,7 +30,10 @@ class PlayerActivity : AppCompatActivity(), ServiceConnection {
 
     override fun onCreateContextMenu(menu: ContextMenu?, v: View?, menuInfo: ContextMenu.ContextMenuInfo?) {
         super.onCreateContextMenu(menu, v, menuInfo)
+    }
 
+    override fun onSaveInstanceState(outState: Bundle?, outPersistentState: PersistableBundle?) {
+        super.onSaveInstanceState(outState, outPersistentState)
     }
 
     override fun onResume() {
