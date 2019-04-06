@@ -7,10 +7,11 @@ import android.content.ServiceConnection
 import android.graphics.Point
 import android.os.Bundle
 import android.os.IBinder
-import android.view.ContextMenu
-import android.view.SurfaceHolder
-import android.view.View
+import android.text.InputType
+import android.view.*
+import android.widget.EditText
 import android.widget.SeekBar
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import com.silverhetch.aura.media.AuraMediaPlayer
@@ -29,12 +30,34 @@ class PlayerActivity : AppCompatActivity(), ServiceConnection, SurfaceHolder.Cal
         mediaPlayer_display.holder.addCallback(this)
     }
 
-    override fun onCreateContextMenu(
-        menu: ContextMenu?,
-        v: View?,
-        menuInfo: ContextMenu.ContextMenuInfo?
-    ) {
-        super.onCreateContextMenu(menu, v, menuInfo)
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.player, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+        return when (item?.itemId) {
+            R.id.menuPlayer_open -> {
+                openTarget()
+                true
+            }
+            else -> false
+        }
+    }
+
+    private fun openTarget() {
+        val inputView = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_TEXT
+        }
+        AlertDialog.Builder(this)
+            .setView(inputView)
+            .setPositiveButton(R.string.app_confirm) { _, _ ->
+                mediaPlayer.load(inputView.text.toString())
+                mediaPlayer.play()
+                mediaPlayer.attachDisplay(mediaPlayer_display.holder)
+            }
+            .setNegativeButton(R.string.app_cancel) { _, _ -> }
+            .show()
     }
 
     override fun onResume() {
