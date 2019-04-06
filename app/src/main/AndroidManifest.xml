@@ -11,11 +11,17 @@
             android:roundIcon="@mipmap/ic_launcher_round"
             android:supportsRtl="true"
             android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity">
+        <activity android:name=".PlayerActivity">
             <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
                 <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
 
                 <category android:name="android.intent.category.LAUNCHER"/>
+
+                <data android:scheme="content"
+                      android:mimeType="*/*"/>
             </intent-filter>
         </activity>
     </application>
