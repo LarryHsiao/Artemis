@@ -7,7 +7,6 @@ import android.content.ServiceConnection
 import android.graphics.Point
 import android.os.Bundle
 import android.os.IBinder
-import android.os.PersistableBundle
 import android.view.ContextMenu
 import android.view.SurfaceHolder
 import android.view.View
@@ -17,7 +16,7 @@ import androidx.lifecycle.Observer
 import com.silverhetch.aura.media.AuraMediaPlayer
 import kotlinx.android.synthetic.main.activity_main.*
 
-class PlayerActivity : AppCompatActivity(), ServiceConnection {
+class PlayerActivity : AppCompatActivity(), ServiceConnection, SurfaceHolder.Callback {
     private lateinit var mediaPlayer: AuraMediaPlayer;
     private var pendingPlay = false
 
@@ -26,25 +25,21 @@ class PlayerActivity : AppCompatActivity(), ServiceConnection {
         setContentView(R.layout.activity_main)
 
         pendingPlay = savedInstanceState == null && intent?.data != null
+
+        mediaPlayer_display.holder.addCallback(this)
     }
 
-    override fun onCreateContextMenu(menu: ContextMenu?, v: View?, menuInfo: ContextMenu.ContextMenuInfo?) {
+    override fun onCreateContextMenu(
+        menu: ContextMenu?,
+        v: View?,
+        menuInfo: ContextMenu.ContextMenuInfo?
+    ) {
         super.onCreateContextMenu(menu, v, menuInfo)
-    }
-
-    override fun onSaveInstanceState(outState: Bundle?, outPersistentState: PersistableBundle?) {
-        super.onSaveInstanceState(outState, outPersistentState)
     }
 
     override fun onResume() {
         super.onResume()
 
-        startService(Intent(this, MediaPlayerService::class.java))
-        bindService(
-            Intent(this, MediaPlayerService::class.java),
-            this,
-            Service.BIND_AUTO_CREATE
-        )
     }
 
     override fun onPause() {
@@ -56,30 +51,34 @@ class PlayerActivity : AppCompatActivity(), ServiceConnection {
         super.onDestroy()
     }
 
+    override fun surfaceChanged(holder: SurfaceHolder?, format: Int, width: Int, height: Int) {
+    }
+
+    override fun surfaceDestroyed(holder: SurfaceHolder?) {
+    }
+
+    override fun surfaceCreated(holder: SurfaceHolder?) {
+        startService(Intent(this@PlayerActivity, MediaPlayerService::class.java))
+        bindService(
+            Intent(this@PlayerActivity, MediaPlayerService::class.java),
+            this@PlayerActivity,
+            Service.BIND_AUTO_CREATE
+        )
+    }
+
     override fun onServiceDisconnected(name: ComponentName?) {
     }
 
     override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
         mediaPlayer = (service as MediaPlayerService.Binder).mediaPlayer()
         if (pendingPlay) {
+            pendingPlay = false
             mediaPlayer.load(intent?.data.toString())
             mediaPlayer.play()
-            main_surfaceView.holder.addCallback(object : SurfaceHolder.Callback {
-                override fun surfaceChanged(holder: SurfaceHolder?, format: Int, width: Int, height: Int) {
-                }
-
-                override fun surfaceDestroyed(holder: SurfaceHolder?) {
-                }
-
-                override fun surfaceCreated(holder: SurfaceHolder?) {
-                    holder?.run { mediaPlayer.attachDisplay(this) }
-                }
-            })
-        } else {
-            mediaPlayer.attachDisplay(main_surfaceView.holder)
         }
+        mediaPlayer.attachDisplay(mediaPlayer_display.holder)
         mediaPlayer.videoSize().observe(this, Observer {
-            main_surfaceView.layoutParams = main_surfaceView.layoutParams.apply {
+            mediaPlayer_display.layoutParams = mediaPlayer_display.layoutParams.apply {
                 width = Point().run {
                     windowManager.defaultDisplay.getSize(this)
                     x
