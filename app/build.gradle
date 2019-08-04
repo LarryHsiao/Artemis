@@ -1,27 +1,15 @@
-buildscript{
-    repositories{
-        maven { url "https://dl.bintray.com/larryhsiao/Elizabeth" }
-    }
-}
-
-plugins{
-    id 'com.silverhetch.thea' version '1.2.1'
-}
-
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 
-println(thea.versionIndicator.apply(""))
-
 android {
     compileSdkVersion 28
     defaultConfig {
-        applicationId "com.silverhetch.artemis"
-        minSdkVersion 21
+        applicationId "com.larryhsiao.artemis"
+        minSdkVersion 23
         targetSdkVersion 28
-        versionCode thea.version.versionByFlavor("").versionCode()
-        versionName thea.version.versionByFlavor("").versionName()
+        versionCode 1000
+        versionName "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -35,15 +23,15 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'com.silverhetch:ourea:0.0.3'
-    implementation 'com.silverhetch:clotho:1.3.7'
-    implementation 'com.silverhetch:aura:1.2.2'
-    implementation"org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+    implementation 'com.silverhetch:clotho:1.11.3'
+    implementation 'com.silverhetch:aura:1.15.3'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     implementation 'androidx.appcompat:appcompat:1.0.2'
     implementation 'android.arch.lifecycle:extensions:1.1.1'
-    implementation 'androidx.core:core-ktx:1.0.1'
+    implementation 'androidx.core:core-ktx:1.0.2'
     implementation 'androidx.media:media:1.0.1'
     implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
     testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'androidx.test:runner:1.1.1'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1'
+    androidTestImplementation 'androidx.test:runner:1.2.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
 }
