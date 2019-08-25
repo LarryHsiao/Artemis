@@ -23,5 +23,3 @@ if (System.getenv("UPLOAD_STORE_PATH")!=null){
         }
     }
 }
-
-apply from: 'deploy.gradle'
