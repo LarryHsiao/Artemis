@@ -35,6 +35,14 @@
                     android:scheme="content" />
             </intent-filter>
         </activity>
+        <activity android:name=".UriInputActivity"
+            android:label="@string/input_a_uri"
+            android:theme="@style/Theme.AppCompat.Translucent"
+            >
+           <intent-filter>
+               <action android:name="android.intent.action.GET_CONTENT"/>
+           </intent-filter>
+        </activity>
 
         <service android:name=".MediaPlayerService" />
     </application>
