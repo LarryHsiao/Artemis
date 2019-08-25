@@ -2,14 +2,17 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 
+def artemisVersionName = "v1.0.0"
+def artemisVersionCode = 10000
+
 android {
     compileSdkVersion 28
     defaultConfig {
         applicationId "com.larryhsiao.artemis"
         minSdkVersion 23
         targetSdkVersion 28
-        versionCode 1000
-        versionName "1.0.0"
+        versionCode artemisVersionCode
+        versionName artemisVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
