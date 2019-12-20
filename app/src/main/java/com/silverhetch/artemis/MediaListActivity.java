@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.silverhetch.artemis.media.AllAudio;
 import com.silverhetch.artemis.media.Media;
+import com.silverhetch.artemis.media.QueriedMediaList;
 import com.silverhetch.aura.AuraActivity;
 
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
@@ -42,6 +43,6 @@ public class MediaListActivity extends AuraActivity {
     @Override
     public void onPermissionGranted() {
         super.onPermissionGranted();
-        adapter.load(new AllAudio(this).value());
+        adapter.load(new QueriedMediaList(new AllAudio(this)).value());
     }
 }
