@@ -31,6 +31,6 @@ class MediaPlayerService : Service() {
         fun mediaPlayer(): AuraMediaPlayer {
             return mediaPlayer
         }
-    }
+     }
 }
 

@@ -40,6 +40,7 @@ class PlayerActivity : AppCompatActivity() , SurfaceHolder.Callback{
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             mediaPlayer = (service as MediaPlayerService.Binder).mediaPlayer()
             if (pendingPlay) {
+                pendingPlay = false
                 play(intent?.data.toString())
             }
             mediaPlayer_display.holder.addCallback(this@PlayerActivity)
@@ -148,6 +149,7 @@ class PlayerActivity : AppCompatActivity() , SurfaceHolder.Callback{
     override fun onPause() {
         super.onPause()
         try {
+            mediaPlayer.playback().pause()
             unbindService(connection)
         } catch (ignore: IllegalArgumentException) {
             ignore.printStackTrace()
