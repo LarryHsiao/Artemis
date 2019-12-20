@@ -21,7 +21,7 @@ import kotlinx.android.synthetic.main.activity_player.*
 /**
  * Player
  */
-class PlayerActivity : AppCompatActivity() {
+class PlayerActivity : AppCompatActivity() , SurfaceHolder.Callback{
     companion object {
         private const val REQUEST_CODE_VIDEO_PICK = 1000
     }
@@ -33,6 +33,8 @@ class PlayerActivity : AppCompatActivity() {
     private var pendingPlay = false
     private val connection = object : ServiceConnection {
         override fun onServiceDisconnected(name: ComponentName?) {
+            mediaPlayer.detachDisplay()
+            mediaPlayer_display.holder.removeCallback(this@PlayerActivity)
         }
 
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -40,6 +42,7 @@ class PlayerActivity : AppCompatActivity() {
             if (pendingPlay) {
                 play(intent?.data.toString())
             }
+            mediaPlayer_display.holder.addCallback(this@PlayerActivity)
             attachDisplay()
             mediaPlayer.state().observe(lifecycleOwner, Observer {
                 mediaPlayer_progress.secondaryProgress = ((it.buffered() / 100f) * mediaPlayer_progress.max).toInt()
@@ -50,7 +53,6 @@ class PlayerActivity : AppCompatActivity() {
                     mediaPlayer.playback().seekTo(0)
                     mediaPlayer.playback().pause()
                 }
-
             })
             mediaPlayer_progress.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
@@ -110,23 +112,6 @@ class PlayerActivity : AppCompatActivity() {
             showControl()
             false
         }
-        mediaPlayer_display.holder.addCallback(object : SurfaceHolder.Callback {
-            override fun surfaceChanged(holder: SurfaceHolder?, format: Int, width: Int, height: Int) {
-            }
-
-            override fun surfaceDestroyed(holder: SurfaceHolder?) {
-            }
-
-            override fun surfaceCreated(holder: SurfaceHolder?) {
-                startService(Intent(mediaPlayer_display.context, MediaPlayerService::class.java))
-                bindService(
-                    Intent(mediaPlayer_display.context, MediaPlayerService::class.java),
-                    connection,
-                    Context.BIND_AUTO_CREATE
-                )
-                attachDisplay()
-            }
-        })
 
         mediaPlayer_open.setOnClickListener { openTarget() }
     }
@@ -152,6 +137,12 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        startService(Intent(mediaPlayer_display.context, MediaPlayerService::class.java))
+        bindService(
+            Intent(mediaPlayer_display.context, MediaPlayerService::class.java),
+            connection,
+            Context.BIND_AUTO_CREATE
+        )
     }
 
     override fun onPause() {
@@ -208,5 +199,16 @@ class PlayerActivity : AppCompatActivity() {
         mediaPlayer_controlPanel.animate()
             .alpha(0.0f)
             .start()
+    }
+
+    override fun surfaceChanged(holder: SurfaceHolder?, format: Int, width: Int, height: Int) {
+    }
+
+    override fun surfaceDestroyed(holder: SurfaceHolder?) {
+        mediaPlayer.detachDisplay()
+    }
+
+    override fun surfaceCreated(holder: SurfaceHolder?) {
+        attachDisplay()
     }
 }
