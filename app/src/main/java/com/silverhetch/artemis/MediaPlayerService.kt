@@ -13,6 +13,14 @@ class MediaPlayerService : Service() {
     private val binder = Binder()
     private lateinit var mediaPlayer: AuraMediaPlayer
 
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        intent?.let {
+            mediaPlayer.load(it.data.toString())
+            mediaPlayer.playback().play()
+        }
+        return super.onStartCommand(intent, flags, startId)
+    }
+
     override fun onCreate() {
         super.onCreate()
         mediaPlayer = AuraMediaPlayerImpl(this)
@@ -31,6 +39,6 @@ class MediaPlayerService : Service() {
         fun mediaPlayer(): AuraMediaPlayer {
             return mediaPlayer
         }
-     }
+    }
 }
 

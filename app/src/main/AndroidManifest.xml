@@ -43,10 +43,12 @@
                <action android:name="android.intent.action.GET_CONTENT"/>
            </intent-filter>
         </activity>
+        <activity android:name=".MediaListActivity"/>
 
         <service android:name=".MediaPlayerService" />
     </application>
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 
 </manifest>
