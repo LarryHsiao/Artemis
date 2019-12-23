@@ -7,7 +7,7 @@
     android:layout_height="wrap_content">
 
     <ImageView
-        android:background="#515151"
+        android:src="@mipmap/ic_launcher"
         android:layout_width="100dp"
         android:layout_height="100dp" />
 
@@ -17,7 +17,7 @@
         android:layout_weight="1"
         tools:text="Sample text"
         android:layout_marginStart="16dp"
-        android:textAppearance="@style/TextAppearance.Compat.Notification.Title.Media"
+        android:textAppearance="@style/TextAppearance.Compat.Notification.Title"
         android:layout_height="wrap_content" />
 
     <ImageView
@@ -29,12 +29,11 @@
         android:src="@android:drawable/ic_media_play"
         android:layout_height="48dp" />
 
-    <TextView
+    <ImageView
         android:layout_width="48dp"
         android:padding="4dp"
         android:id="@+id/notificationPlayer_close"
-        android:text="X"
-        android:textSize="30dp"
+        android:src="@drawable/ic_close"
         android:background="?android:attr/selectableItemBackgroundBorderless"
         android:gravity="center"
         android:layout_marginStart="16dp"

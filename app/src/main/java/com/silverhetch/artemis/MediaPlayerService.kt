@@ -18,7 +18,7 @@ import androidx.lifecycle.Observer
 import com.silverhetch.artemis.media.ConstMedia
 import com.silverhetch.artemis.media.Media
 import com.silverhetch.artemis.media.MediaByUri
-import com.silverhetch.artemis.media.QueriedMedia
+import com.silverhetch.artemis.media.QueriedAudio
 import com.silverhetch.artemis.player.PlayerWrapper
 import com.silverhetch.aura.media.AuraMediaPlayer
 import com.silverhetch.aura.media.AuraMediaPlayerImpl
@@ -79,7 +79,7 @@ class MediaPlayerService : LifecycleService() {
             override fun load(uri: String) {
                 super.load(uri)
                 if (uri != currentMedia.uri()) {
-                    currentMedia = QueriedMedia(
+                    currentMedia = QueriedAudio(
                         MediaByUri(
                             this@MediaPlayerService,
                             Uri.parse(uri)

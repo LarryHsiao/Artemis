@@ -11,15 +11,15 @@ import static android.provider.MediaStore.MediaColumns.TITLE;
 /**
  * Source to build media from cursor.
  */
-public class QueriedMedia implements Source<Media> {
+public class QueriedAudio implements Source<Media> {
     private final Source<Cursor> origin;
     private final boolean autoClose;
 
-    public QueriedMedia(Source<Cursor> origin) {
+    public QueriedAudio(Source<Cursor> origin) {
         this(origin, true);
     }
 
-    public QueriedMedia(Source<Cursor> origin, boolean autoClose) {
+    public QueriedAudio(Source<Cursor> origin, boolean autoClose) {
         this.origin = origin;
         this.autoClose = autoClose;
     }

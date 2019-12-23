@@ -11,10 +11,10 @@ import java.util.List;
 /**
  * Source to build media list from cursor.
  */
-public class QueriedMediaList implements Source<List<Media>> {
+public class QueriedAudioList implements Source<List<Media>> {
     private final Source<Cursor> origin;
 
-    public QueriedMediaList(Source<Cursor> origin) {
+    public QueriedAudioList(Source<Cursor> origin) {
         this.origin = origin;
     }
 
@@ -26,7 +26,7 @@ public class QueriedMediaList implements Source<List<Media>> {
                 return Collections.emptyList();
             }
             while (cursor.moveToNext()) {
-                media.add(new QueriedMedia(
+                media.add(new QueriedAudio(
                         new ConstSource<>(cursor), false
                 ).value());
             }

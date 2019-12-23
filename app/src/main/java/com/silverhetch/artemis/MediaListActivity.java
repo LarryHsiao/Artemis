@@ -10,9 +10,15 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.silverhetch.artemis.media.AllAudio;
 import com.silverhetch.artemis.media.Media;
-import com.silverhetch.artemis.media.QueriedMediaList;
+import com.silverhetch.artemis.media.QueriedAudioList;
 import com.silverhetch.aura.AuraActivity;
+import com.silverhetch.clotho.utility.comparator.StringComparator;
 
+import java.util.Comparator;
+import java.util.List;
+
+import static android.os.Build.VERSION.SDK_INT;
+import static android.os.Build.VERSION_CODES.N;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 
 /**
@@ -43,6 +49,17 @@ public class MediaListActivity extends AuraActivity {
     @Override
     public void onPermissionGranted() {
         super.onPermissionGranted();
-        adapter.load(new QueriedMediaList(new AllAudio(this)).value());
+        final List<Media> media = new QueriedAudioList(new AllAudio(this)).value();
+        if (SDK_INT >= N) {
+            media.sort(new Comparator<Media>() {
+                private final Comparator<String> comparator = new StringComparator();
+
+                @Override
+                public int compare(Media o1, Media o2) {
+                    return comparator.compare(o2.title(), o1.title());
+                }
+            });
+        }
+        adapter.load(media);
     }
 }
