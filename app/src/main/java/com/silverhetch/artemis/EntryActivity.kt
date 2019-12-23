@@ -9,6 +9,6 @@ class EntryActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         finish()
-        startActivity(Intent(this, MediaListActivity::class.java))
+        startActivity(Intent(this, PlayerActivity::class.java))
     }
 }

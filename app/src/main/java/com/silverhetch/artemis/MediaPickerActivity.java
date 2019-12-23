@@ -20,16 +20,14 @@ import static android.os.Build.VERSION_CODES.N;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 
 /**
- * Activity that shows the media list on the screen.
+ * Activity that shows the media list to pick a media to play.
  */
-public class MediaListActivity extends AuraActivity {
-    private final MediaAdapter adapter = new MediaAdapter(new MediaAdapter.OnClickListener() {
-        @Override
-        public void onClicked(Media media) {
-            final Intent intent = new Intent(MediaListActivity.this, MediaPlayerService.class);
-            intent.setData(Uri.parse(media.uri()));
-            startService(intent);
-        }
+public class MediaPickerActivity extends AuraActivity {
+    private final MediaAdapter adapter = new MediaAdapter(media -> {
+        final Intent data = new Intent();
+        data.setData(Uri.parse(media.uri()));
+        setResult(RESULT_OK, data);
+        finish();
     });
 
     @Override
@@ -48,6 +46,7 @@ public class MediaListActivity extends AuraActivity {
     public void onPermissionGranted() {
         super.onPermissionGranted();
         final List<Media> media = new QueriedVideoList(new AllVideo(this)).value();
+        media.addAll(new QueriedAudioList(new AllAudio(this)).value());
         if (SDK_INT >= N) {
             media.sort(new Comparator<Media>() {
                 private final Comparator<String> comparator = new StringComparator();

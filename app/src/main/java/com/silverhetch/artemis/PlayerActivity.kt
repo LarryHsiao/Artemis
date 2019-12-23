@@ -162,6 +162,7 @@ class PlayerActivity : AppCompatActivity() , SurfaceHolder.Callback{
                 this,
                 getString(R.string.open_from),
                 PickerIntent("video/*", "audio/*").value(),
+                Intent(this, MediaPickerActivity::class.java),
                 Intent(this, UriInputActivity::class.java)
             ).value(),
             REQUEST_CODE_VIDEO_PICK

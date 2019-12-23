@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.silverhetch.artemis">
+          package="com.silverhetch.artemis">
 
     <application
         android:allowBackup="true"
@@ -10,45 +10,48 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity android:name=".EntryActivity"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar.FullScreen"
-            >
+                  android:theme="@style/Theme.AppCompat.Light.NoActionBar.FullScreen"
+        >
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+                <action android:name="android.intent.action.MAIN"/>
 
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
         <activity
             android:name=".PlayerActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar.FullScreen">
             <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.BROWSABLE"/>
 
                 <data
                     android:mimeType="audio/*"
-                    android:scheme="content" />
+                    android:scheme="content"/>
                 <data
                     android:mimeType="video/*"
-                    android:scheme="content" />
+                    android:scheme="content"/>
             </intent-filter>
         </activity>
         <activity android:name=".UriInputActivity"
-            android:label="@string/input_a_uri"
-            android:theme="@style/Theme.AppCompat.Translucent"
-            >
-           <intent-filter>
-               <action android:name="android.intent.action.GET_CONTENT"/>
-           </intent-filter>
+                  android:label="@string/input_a_uri"
+                  android:theme="@style/Theme.AppCompat.Translucent"
+        >
+            <intent-filter>
+                <action android:name="android.intent.action.GET_CONTENT"/>
+            </intent-filter>
         </activity>
-        <activity android:name=".MediaListActivity"/>
+        <activity android:name=".MediaPickerActivity"
+                  android:icon="@drawable/ic_folder"
+                  android:label="@string/storage"
+        />
 
-        <service android:name=".MediaPlayerService" />
+        <service android:name=".MediaPlayerService"/>
     </application>
 
-    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 
 </manifest>
