@@ -8,9 +8,7 @@ import android.view.ViewGroup;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import com.silverhetch.artemis.media.AllAudio;
-import com.silverhetch.artemis.media.Media;
-import com.silverhetch.artemis.media.QueriedAudioList;
+import com.silverhetch.artemis.media.*;
 import com.silverhetch.aura.AuraActivity;
 import com.silverhetch.clotho.utility.comparator.StringComparator;
 
@@ -49,7 +47,7 @@ public class MediaListActivity extends AuraActivity {
     @Override
     public void onPermissionGranted() {
         super.onPermissionGranted();
-        final List<Media> media = new QueriedAudioList(new AllAudio(this)).value();
+        final List<Media> media = new QueriedVideoList(new AllVideo(this)).value();
         if (SDK_INT >= N) {
             media.sort(new Comparator<Media>() {
                 private final Comparator<String> comparator = new StringComparator();
