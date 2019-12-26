@@ -2,9 +2,11 @@ package com.silverhetch.artemis.media;
 
 import android.content.ContentUris;
 import android.database.Cursor;
+
 import com.silverhetch.clotho.Source;
 
 import static android.provider.BaseColumns._ID;
+import static android.provider.MediaStore.MediaColumns.RELATIVE_PATH;
 import static android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
 import static android.provider.MediaStore.MediaColumns.TITLE;
 
@@ -33,7 +35,8 @@ public class QueriedVideo implements Source<Media> {
                     ContentUris.withAppendedId(
                             EXTERNAL_CONTENT_URI,
                             cursor.getInt(cursor.getColumnIndex(_ID))
-                    ).toString()
+                    ).toString(),
+                    cursor.getString(cursor.getColumnIndex(RELATIVE_PATH))
             );
         } finally {
             if (autoClose) {

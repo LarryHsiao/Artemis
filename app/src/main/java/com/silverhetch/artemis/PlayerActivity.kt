@@ -13,15 +13,23 @@ import android.view.SurfaceHolder
 import android.widget.SeekBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
+import com.larryhsiao.juno.AllFiles
+import com.larryhsiao.juno.FakeDataConn
+import com.larryhsiao.juno.QueriedAFiles
+import com.larryhsiao.juno.TagDbConn
+import com.larryhsiao.juno.h2.EmbedH2Conn
 import com.silverhetch.aura.intent.ChooserIntent
 import com.silverhetch.aura.intent.PickerIntent
 import com.silverhetch.aura.media.AuraMediaPlayer
+import com.silverhetch.clotho.source.ConstSource
 import kotlinx.android.synthetic.main.activity_player.*
+import java.io.File
+import java.nio.file.Files
 
 /**
  * Player
  */
-class PlayerActivity : AppCompatActivity() , SurfaceHolder.Callback{
+class PlayerActivity : AppCompatActivity(), SurfaceHolder.Callback {
     companion object {
         private const val REQUEST_CODE_VIDEO_PICK = 1000
     }
@@ -37,7 +45,10 @@ class PlayerActivity : AppCompatActivity() , SurfaceHolder.Callback{
             mediaPlayer_display.holder.removeCallback(this@PlayerActivity)
         }
 
-        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+        override fun onServiceConnected(
+            name: ComponentName?,
+            service: IBinder?
+        ) {
             mediaPlayer = (service as MediaPlayerService.Binder).mediaPlayer()
             if (pendingPlay) {
                 pendingPlay = false
@@ -46,7 +57,8 @@ class PlayerActivity : AppCompatActivity() , SurfaceHolder.Callback{
             mediaPlayer_display.holder.addCallback(this@PlayerActivity)
             attachDisplay()
             mediaPlayer.state().observe(lifecycleOwner, Observer {
-                mediaPlayer_progress.secondaryProgress = ((it.buffered() / 100f) * mediaPlayer_progress.max).toInt()
+                mediaPlayer_progress.secondaryProgress =
+                    ((it.buffered() / 100f) * mediaPlayer_progress.max).toInt()
                 mediaPlayer_progress.progress = it.progress()
                 mediaPlayer_progress.max = it.duration()
                 updateButton(it.isPlaying())
@@ -55,8 +67,13 @@ class PlayerActivity : AppCompatActivity() , SurfaceHolder.Callback{
                     mediaPlayer.playback().pause()
                 }
             })
-            mediaPlayer_progress.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+            mediaPlayer_progress.setOnSeekBarChangeListener(object :
+                SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(
+                    seekBar: SeekBar?,
+                    progress: Int,
+                    fromUser: Boolean
+                ) {
                     if (fromUser) {
                         mediaPlayer.playback().seekTo(progress)
                     }
@@ -69,7 +86,9 @@ class PlayerActivity : AppCompatActivity() , SurfaceHolder.Callback{
                 }
             })
 
-            mediaPlayer_play.setOnClickListener { mediaPlayer.playback().play() }
+            mediaPlayer_play.setOnClickListener {
+                mediaPlayer.playback().play()
+            }
         }
     }
     private val controlVisibility: Runnable = Runnable {
@@ -87,13 +106,15 @@ class PlayerActivity : AppCompatActivity() , SurfaceHolder.Callback{
         if (mediaPlayer_display.holder.surface.isValid) {
             mediaPlayer.attachDisplay(mediaPlayer_display.holder)
             mediaPlayer.videoSize().observe(lifecycleOwner, Observer {
-                mediaPlayer_display.layoutParams = mediaPlayer_display.layoutParams.apply {
-                    width = Point().run {
-                        windowManager.defaultDisplay.getSize(this)
-                        x
+                mediaPlayer_display.layoutParams =
+                    mediaPlayer_display.layoutParams.apply {
+                        width = Point().run {
+                            windowManager.defaultDisplay.getSize(this)
+                            x
+                        }
+                        height =
+                            ((it.y.toFloat() / it.x.toFloat()) * width).toInt()
                     }
-                    height = ((it.y.toFloat() / it.x.toFloat()) * width).toInt()
-                }
 
             })
         }
@@ -109,7 +130,7 @@ class PlayerActivity : AppCompatActivity() , SurfaceHolder.Callback{
             showingControl = true
             handler.postDelayed({
                 showingControl = false
-            },3000)
+            }, 3000)
             showControl()
             false
         }
@@ -138,7 +159,12 @@ class PlayerActivity : AppCompatActivity() , SurfaceHolder.Callback{
 
     override fun onResume() {
         super.onResume()
-        startService(Intent(mediaPlayer_display.context, MediaPlayerService::class.java))
+        startService(
+            Intent(
+                mediaPlayer_display.context,
+                MediaPlayerService::class.java
+            )
+        )
         bindService(
             Intent(mediaPlayer_display.context, MediaPlayerService::class.java),
             connection,
@@ -169,7 +195,11 @@ class PlayerActivity : AppCompatActivity() , SurfaceHolder.Callback{
         )
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+    override fun onActivityResult(
+        requestCode: Int,
+        resultCode: Int,
+        data: Intent?
+    ) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_CODE_VIDEO_PICK && resultCode == Activity.RESULT_OK) {
             data?.data?.let {
@@ -204,7 +234,12 @@ class PlayerActivity : AppCompatActivity() , SurfaceHolder.Callback{
             .start()
     }
 
-    override fun surfaceChanged(holder: SurfaceHolder?, format: Int, width: Int, height: Int) {
+    override fun surfaceChanged(
+        holder: SurfaceHolder?,
+        format: Int,
+        width: Int,
+        height: Int
+    ) {
     }
 
     override fun surfaceDestroyed(holder: SurfaceHolder?) {

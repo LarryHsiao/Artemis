@@ -41,7 +41,7 @@ class MediaPlayerService : LifecycleService() {
 
     private val binder = Binder()
     private lateinit var mediaPlayer: AuraMediaPlayer
-    private var currentMedia: Media = ConstMedia("", "");
+    private var currentMedia: Media = ConstMedia("", "", "")
 
     override fun onStartCommand(
         intent: Intent?,
@@ -89,28 +89,41 @@ class MediaPlayerService : LifecycleService() {
             }
         }
         mediaPlayer.state().observe(this, Observer {
-            if (it.completed()){
+            if (it.completed()) {
                 mediaPlayer.playback().pause()
             }
-            val manager = NotificationManagerCompat.from(this)
-            val builder: NotificationCompat.Builder =
-                NotificationCompat.Builder(this, CHANNEL_ID_PLAYER)
-                    .setSmallIcon(R.mipmap.ic_launcher)
-                    .setAutoCancel(false)
-                    .setCustomContentView(playerView(it))
-                    .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            if (SDK_INT >= O) {
-                manager.createNotificationChannel(
-                    NotificationChannel(
-                        CHANNEL_ID_PLAYER,
-                        CHANNEL_ID_PLAYER,
-                        NotificationManager.IMPORTANCE_DEFAULT
-                    )
-                )
-            }
-            manager.notify(NOTIFICATION_ID, builder.build())
+            updateNotification(it)
         })
     }
+
+    private fun updateNotification(state:State){
+        val manager = NotificationManagerCompat.from(this)
+        if (currentMedia.title().isEmpty()){
+            manager.cancel(NOTIFICATION_ID)
+            return
+        }
+        val builder: NotificationCompat.Builder =
+            NotificationCompat.Builder(this, CHANNEL_ID_PLAYER)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setAutoCancel(false)
+                .setCustomContentView(playerView(state))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+        if (SDK_INT >= O) {
+            manager.createNotificationChannel(
+                NotificationChannel(
+                    CHANNEL_ID_PLAYER,
+                    CHANNEL_ID_PLAYER,
+                    NotificationManager.IMPORTANCE_DEFAULT
+                ).apply {
+                    setShowBadge(false)
+                    vibrationPattern = LongArray(0)
+                    setSound(null, null)
+                }
+            )
+        }
+        manager.notify(NOTIFICATION_ID, builder.build())
+    }
+
 
     private fun playerView(state: State): RemoteViews {
         return RemoteViews(

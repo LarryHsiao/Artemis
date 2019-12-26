@@ -26,6 +26,8 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'com.h2database:h2:1.4.197'
+    implementation 'com.larryhsiao:juno:1.0.2'
     implementation 'com.silverhetch:ourea:0.0.3'
     implementation 'com.silverhetch:clotho:1.15.0'
     implementation 'com.silverhetch:aura:1.20.1'

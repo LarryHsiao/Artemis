@@ -13,4 +13,9 @@ public interface Media {
      * Uri ot this media.
      */
     String uri();
+
+    /**
+     * Relative path
+     */
+    String relativePath();
 }
