@@ -9,7 +9,9 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build.VERSION.SDK_INT
 import android.os.Build.VERSION_CODES.O
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -79,12 +81,22 @@ class MediaPlayerService : LifecycleService() {
             override fun load(uri: String) {
                 super.load(uri)
                 if (uri != currentMedia.uri()) {
-                    currentMedia = QueriedAudio(
-                        MediaByUri(
-                            this@MediaPlayerService,
-                            Uri.parse(uri)
-                        )
-                    ).value()
+                    if (uri.startsWith("http")) {
+                        // TODO: Playing media info
+                    } else {
+                        currentMedia = QueriedAudio(
+                            MediaByUri(
+                                this@MediaPlayerService,
+                                Uri.parse(uri)
+                            )
+                        ).value()
+                    }
+
+                    Handler(Looper.getMainLooper()).postDelayed(object : Runnable {
+                        override fun run() {
+                            mediaPlayer.playback().seekTo(15000)
+                        }
+                    },100)
                 }
             }
         }
@@ -96,9 +108,9 @@ class MediaPlayerService : LifecycleService() {
         })
     }
 
-    private fun updateNotification(state:State){
+    private fun updateNotification(state: State) {
         val manager = NotificationManagerCompat.from(this)
-        if (currentMedia.title().isEmpty()){
+        if (currentMedia.title().isEmpty()) {
             manager.cancel(NOTIFICATION_ID)
             return
         }

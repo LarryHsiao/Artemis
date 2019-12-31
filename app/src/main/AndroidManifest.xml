@@ -48,6 +48,7 @@
                   android:label="@string/storage"
         />
         <activity android:name=".MediaListActivity" />
+        <activity android:name=".devices.DeviceListActivity"/>
 
         <service android:name=".MediaPlayerService"/>
     </application>
