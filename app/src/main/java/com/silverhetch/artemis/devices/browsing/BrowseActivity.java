@@ -3,13 +3,11 @@ package com.silverhetch.artemis.devices.browsing;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
-import android.media.Image;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
-import android.webkit.MimeTypeMap;
 import android.widget.ArrayAdapter;
-import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -17,12 +15,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.silverhetch.artemis.ArtemisApp;
+import com.silverhetch.artemis.PlayerActivity;
 import com.silverhetch.artemis.R;
 import com.silverhetch.aura.AuraActivity;
 import com.silverhetch.clotho.utility.comparator.StringComparator;
 import com.squareup.picasso.Picasso;
 import com.stfalcon.imageviewer.StfalconImageViewer;
-import com.stfalcon.imageviewer.loader.ImageLoader;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -30,6 +28,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URLConnection;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -46,6 +45,8 @@ import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
  */
 public class BrowseActivity extends AuraActivity {
     private static final String ARG_HOST_NAME = "ARG_HOST_NAME";
+    private final List<String> path = new ArrayList<>();
+    private ArrayAdapter<BrowsingItem> adapter;
 
     public static Intent newIntent(Context context, String hostName) {
         final Intent intent = new Intent(context, BrowseActivity.class);
@@ -56,8 +57,7 @@ public class BrowseActivity extends AuraActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        final String hostName = getIntent().getStringExtra(ARG_HOST_NAME);
-        final ArrayAdapter<BrowsingItem> adapter = new ArrayAdapter<BrowsingItem>(this, android.R.layout.simple_list_item_1) {
+        adapter = new ArrayAdapter<BrowsingItem>(this, android.R.layout.simple_list_item_1) {
             @NonNull
             @Override
             public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
@@ -90,28 +90,71 @@ public class BrowseActivity extends AuraActivity {
                         .show();
                 return;
             }
-            final String mimeType = URLConnection.guessContentTypeFromName(item.name());
-            if (mimeType == null) {
-                new AlertDialog.Builder(view.getContext())
-                        .setMessage("Invalid file")
-                        .show();
-                return;
-            }
-            if (mimeType.startsWith("image")) {
-                new StfalconImageViewer.Builder<>(
-                        view.getContext(),
-                        new BrowsingItem[]{item},
-                        (imageView, image) -> {
-                            Picasso.get().load(
-                                    "http://" + hostName + "/" + image.name()
-                            ).into(imageView);
-                        }
-                ).show();
+            if (item.isDirectory()) {
+                openDirectory(item);
+            } else {
+                openItem(item);
             }
         });
 
+        loadPath();
+    }
+
+    private void openItem(BrowsingItem item) {
+        final String hostName = getIntent().getStringExtra(ARG_HOST_NAME);
+        final String mimeType = URLConnection.guessContentTypeFromName(item.name());
+        if (mimeType == null) {
+            new AlertDialog.Builder(this)
+                    .setMessage("Invalid file")
+                    .show();
+            return;
+        }
+        if (mimeType.startsWith("image")) {
+            new StfalconImageViewer.Builder<>(
+                    this,
+                    new BrowsingItem[]{item},
+                    (imageView, image) -> Picasso.get().load(
+                            pathUrl() + "/" + image.name()
+                    ).into(imageView)
+            ).show();
+        }
+
+        if (mimeType.startsWith("video") || mimeType.startsWith("audio")) {
+            final Intent intent = new Intent(this, PlayerActivity.class);
+            intent.setData(Uri.parse("http://" + hostName + "/" + item.name()));
+            startActivity(intent);
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (path.size() > 0) {
+            path.remove(path.size() - 1);
+            loadPath();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    private void openDirectory(BrowsingItem item) {
+        path.add(item.name());
+        loadPath();
+    }
+
+    private String pathUrl() {
+        final String hostName = getIntent().getStringExtra(ARG_HOST_NAME);
+        final StringBuilder builder = new StringBuilder();
+        builder.append("http://").append(hostName);
+        for (String part : path) {
+            builder.append('/');
+            builder.append(part);
+        }
+        return builder.toString();
+    }
+
+    private void loadPath() {
         ((ArtemisApp) getApplicationContext()).httpClient.newCall(new Request.Builder()
-                .url("http://" + hostName)
+                .url(pathUrl())
                 .build()
         ).enqueue(new Callback() {
             @Override
