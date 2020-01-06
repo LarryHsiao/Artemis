@@ -1,16 +1,20 @@
 package com.silverhetch.artemis.devices;
 
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
+
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import com.silverhetch.artemis.PlayerActivity;
+
+import com.silverhetch.artemis.devices.browsing.BrowseActivity;
 import com.silverhetch.aura.AuraActivity;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -25,26 +29,39 @@ import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
  */
 public class DeviceListActivity extends AuraActivity {
     private static final int PORT = 24000;
-    private final HashMap<String, String> devices = new HashMap<>();
+    private final HashMap<String, Target> devices = new HashMap<>();
     private boolean running = true;
-    private ArrayAdapter<String> adapter;
+    private ArrayAdapter<Target> adapter;
     private DatagramSocket socket;
 
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1);
-        final ListView list = new ListView(this);
-        list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        adapter = new ArrayAdapter<Target>(this, android.R.layout.simple_list_item_1) {
+            @NonNull
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                final Intent intent = new Intent(DeviceListActivity.this, PlayerActivity.class);
-                intent.setData(Uri.parse(
-                        "http:/"+adapter.getItem(position)+":8080/Dropbox/Elizabeth/MediaSamples/WeAreGoingOnBullrun.mp4"
-                ));
-                startActivity(intent);
+            public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+                final Target item = getItem(position);
+                TextView textView = ((TextView) super.getView(position, convertView, parent));
+                if (item == null) {
+                    textView.setText("");
+                } else {
+                    textView.setText(item.hostName());
+                }
+                return textView;
             }
+        };
+        final ListView list = new ListView(this);
+        list.setOnItemClickListener((parent, view, position, id) -> {
+            final Target item = adapter.getItem(position);
+            if (item == null) {
+                return;
+            }
+            startActivity(BrowseActivity.newIntent(
+                    this,
+                    item.hostName()
+            ));
         });
         list.setLayoutParams(new ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT));
         list.setAdapter(adapter);
@@ -68,19 +85,19 @@ public class DeviceListActivity extends AuraActivity {
                     final DatagramPacket packet = new DatagramPacket(buffer, 1024);
                     socket.receive(packet);
                     final String msg = new String(buffer);
+                    final String hostName = packet.getAddress().getHostName();
                     runOnUiThread(() -> {
-//                        try {
-                        devices.put(
-                                packet.getAddress().toString(),
-//                                    new JSONObject(msg).getString("name")
-                                packet.getAddress().toString()
-                        );
-                        adapter.clear();
-                        adapter.addAll(devices.values());
-                        adapter.notifyDataSetChanged();
-//                        } catch (JSONException e) {
-//                            e.printStackTrace();
-//                        }
+                        try {
+                            devices.put(
+                                    hostName,
+                                    new JsonTarget(hostName, new JSONObject(msg))
+                            );
+                            adapter.clear();
+                            adapter.addAll(devices.values());
+                            adapter.notifyDataSetChanged();
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
                     });
 //                    targetData.put(
 //                            packet.getAddress().toString(),

@@ -4,4 +4,5 @@
     <string name="open_from">Open from</string>
     <string name="input_a_uri">Input a Uri</string>
     <string name="storage">Stroage</string>
+    <string name="error">Error</string>
 </resources>
