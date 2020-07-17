@@ -1,8 +1,4 @@
 <resources>
     <string name="app_name">Artemis</string>
-    <string name="open">Open</string>
-    <string name="open_from">Open from</string>
-    <string name="input_a_uri">Input a Uri</string>
-    <string name="storage">Stroage</string>
-    <string name="error">Error</string>
+    <string name="Player">Player</string>
 </resources>
