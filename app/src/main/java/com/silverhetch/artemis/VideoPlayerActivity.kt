@@ -3,17 +3,20 @@ package com.silverhetch.artemis
 import android.media.AudioManager
 import android.media.AudioManager.*
 import android.media.MediaPlayer
+import android.net.Uri
 import android.os.Bundle
 import android.view.MotionEvent
 import android.view.MotionEvent.*
 import android.view.SurfaceHolder
 import android.view.View
+import android.widget.SeekBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import com.silverhetch.aura.view.activity.Fullscreen
 import com.silverhetch.aura.view.activity.brightness.InAppBrightness
 import kotlinx.android.synthetic.main.page_video_player.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers.IO
 import kotlin.math.abs
 
 /**
@@ -22,17 +25,13 @@ import kotlin.math.abs
 class VideoPlayerActivity : AppCompatActivity(),
     CoroutineScope by CoroutineScope(Dispatchers.Main + SupervisorJob() + errorHandler) {
     companion object {
-        private const val URI_DEFAULT =
-            "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4"
         val errorHandler = CoroutineExceptionHandler { _, error ->
             error.printStackTrace()
         }
     }
 
     private var player: MediaPlayer = MediaPlayer()
-    private val uri by lazy {
-        intent?.getStringExtra("uri_media") ?: URI_DEFAULT
-    }
+    private val uri by lazy { intent.data }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,7 +41,9 @@ class VideoPlayerActivity : AppCompatActivity(),
         attachDisplay()
         touchEvent()
         statusPolling()
-        launch { play() }
+        launch {
+            uri?.let { play(it) }
+        }
     }
 
     private fun attachDisplay() {
@@ -70,35 +71,35 @@ class VideoPlayerActivity : AppCompatActivity(),
     }
 
     private fun touchEvent() {
-        videoPlayer_display.setOnTouchListener(object : View.OnTouchListener {
+        videoPlayer_root.setOnTouchListener(object : View.OnTouchListener {
             private var pX = 0
             private var pY = 0
             private var dY = 0f
             private var dX = 0f
+            private var moving = false
             override fun onTouch(v: View?, event: MotionEvent?): Boolean {
+                dY = pY - (event?.y ?: 0f)
+                dX = pX - (event?.x ?: 0f)
                 when (event?.actionMasked) {
                     ACTION_DOWN -> {
-                        pX = event.x.toInt()
-                        pY = event.y.toInt()
+                        moving = false
                     }
                     ACTION_MOVE -> {
-                        dY = pY - event.y
-                        dX = pX - event.x
                         if (abs(dY) > 10) {
-                            if (event.x > (videoPlayer_display.width / 2f)) {
+                            if (event.x > (videoPlayer_root.width / 2f)) {
                                 volumeAdjustment(dY)
                             } else {
                                 brightnessAdjustment(dY)
                             }
+                            moving = true
                         }
                         if (abs(dX) > 10) {
                             seekToNextBlock(dX)
+                            moving = true
                         }
-                        pX = event.x.toInt()
-                        pY = event.y.toInt()
                     }
                     ACTION_UP -> {
-                        if (pX - event.x < 10 && pY - event.y < 10) {
+                        if (!moving) {
                             if (player.isPlaying) {
                                 player.pause()
                             } else {
@@ -110,6 +111,8 @@ class VideoPlayerActivity : AppCompatActivity(),
                     else -> {
                     }
                 }
+                pX = event?.x?.toInt() ?: 0
+                pY = event?.y?.toInt() ?: 0
                 return true
             }
         })
@@ -153,23 +156,73 @@ class VideoPlayerActivity : AppCompatActivity(),
             videoPlayer_progress.secondaryProgress =
                 (videoPlayer_progress.max * (percent / 100f)).toInt()
         }
+        videoPlayer_progress.setOnSeekBarChangeListener(object :
+            SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(
+                seekBar: SeekBar?,
+                progress: Int,
+                fromUser: Boolean
+            ) {
+                if (fromUser) {
+                    player.seekTo(progress)
+                }
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+            }
+        })
+        videoPlayer_backBtn.setOnClickListener { onBackPressed() }
     }
 
     private fun statusPolling() = launch {
+        var time: IntArray
         while (isActive) {
             if (player.isPlaying || player.currentPosition > 0) {
                 videoPlayer_progress.max = player.duration
                 videoPlayer_progress.progress = player.currentPosition
+                time = splitTime(player.currentPosition)
+                videoPlayer_progressText.text =
+                    "${String.format(
+                        "%02d", 
+                        time[0]
+                    )}:${String.format(
+                        "%02d",
+                        time[1]
+                    )}"
+                time = splitTime(player.duration)
+                videoPlayer_durationText.text =
+                    "${String.format(
+                        "%02d", 
+                        time[0]
+                    )}:${String.format(
+                        "%02d", 
+                        time[1]
+                    )}"
             }
-
-            println("Is playing " + player.isPlaying)
+            videoPlayer_playbackBtn.setImageResource(
+                if (player.isPlaying) {
+                    android.R.drawable.ic_media_pause
+                } else {
+                    android.R.drawable.ic_media_play
+                }
+            )
             delay(200)
         }
     }
 
-    private suspend fun play() = withContext(Dispatchers.IO) {
+    private fun splitTime(ms: Int): IntArray {
+        var ss = ms / 1000
+        val mm = ss / 60
+        ss -= mm * 60
+        return intArrayOf(mm, ss)
+    }
+
+    private suspend fun play(uri: Uri) = withContext(IO) {
         player.reset()
-        player.setDataSource(uri)
+        player.setDataSource(this@VideoPlayerActivity, uri)
         player.prepare()
         player.start()
     }
