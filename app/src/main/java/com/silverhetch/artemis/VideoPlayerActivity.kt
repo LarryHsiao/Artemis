@@ -1,5 +1,6 @@
 package com.silverhetch.artemis
 
+import android.animation.Animator
 import android.media.AudioManager
 import android.media.AudioManager.*
 import android.media.MediaPlayer
@@ -9,6 +10,8 @@ import android.view.MotionEvent
 import android.view.MotionEvent.*
 import android.view.SurfaceHolder
 import android.view.View
+import android.view.View.GONE
+import android.view.View.VISIBLE
 import android.widget.SeekBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -25,12 +28,14 @@ import kotlin.math.abs
 class VideoPlayerActivity : AppCompatActivity(),
     CoroutineScope by CoroutineScope(Dispatchers.Main + SupervisorJob() + errorHandler) {
     companion object {
+        const val SHOWN_MILLIS = 3000
         val errorHandler = CoroutineExceptionHandler { _, error ->
             error.printStackTrace()
         }
     }
 
     private var player: MediaPlayer = MediaPlayer()
+    private var overlayShownMillis = 0
     private val uri by lazy { intent.data }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -100,10 +105,10 @@ class VideoPlayerActivity : AppCompatActivity(),
                     }
                     ACTION_UP -> {
                         if (!moving) {
-                            if (player.isPlaying) {
-                                player.pause()
+                            if (overlayShownMillis > SHOWN_MILLIS) {
+                                overlayShownMillis = 0
                             } else {
-                                player.start()
+                                overlayShownMillis = SHOWN_MILLIS
                             }
                             v?.performClick()
                         }
@@ -175,23 +180,41 @@ class VideoPlayerActivity : AppCompatActivity(),
             }
         })
         videoPlayer_backBtn.setOnClickListener { onBackPressed() }
+        videoPlayer_playbackBtn.setOnClickListener {
+            if (player.isPlaying) {
+                player.pause()
+            } else {
+                player.start()
+            }
+        }
     }
 
     private fun panelToggle(show: Boolean) {
         if (videoPlayer_overlayTop.alpha != 1f && videoPlayer_overlayTop.alpha != 0f) {
             return
         }
+        val newAlpha = if (show) 1f else 0f
+        if (videoPlayer_overlayTop.alpha == newAlpha) {
+            if (newAlpha == 0f){
+                videoPlayer_overlayTop.visibility = GONE
+                videoPlayer_overlayBottom.visibility = GONE
+            }
+            return
+        }
+        if (newAlpha == 1f){
+            videoPlayer_overlayTop.visibility = VISIBLE
+            videoPlayer_overlayBottom.visibility = VISIBLE
+        }
         videoPlayer_overlayTop.animate().apply {
-            alpha(if (show) 1f else 0f)
+            alpha(newAlpha)
         }
         videoPlayer_overlayBottom.animate().apply {
-            alpha(if (show) 1f else 0f)
+            alpha(newAlpha)
         }
     }
 
     private fun statusPolling() = launch {
         var time: IntArray
-        var overlayShownMillis = 0
         while (isActive) {
             if (player.isPlaying || player.currentPosition > 0) {
                 videoPlayer_progress.max = player.duration
@@ -217,9 +240,9 @@ class VideoPlayerActivity : AppCompatActivity(),
             }
             videoPlayer_playbackBtn.setImageResource(
                 if (player.isPlaying) {
-                    android.R.drawable.ic_media_pause
+                    R.drawable.ic_pause
                 } else {
-                    android.R.drawable.ic_media_play
+                    R.drawable.ic_play
                 }
             )
             if (player.isPlaying) {
@@ -227,7 +250,7 @@ class VideoPlayerActivity : AppCompatActivity(),
             } else {
                 overlayShownMillis = 0
             }
-            panelToggle(overlayShownMillis < 1500)
+            panelToggle(overlayShownMillis < SHOWN_MILLIS)
             delay(200)
         }
     }
@@ -240,6 +263,12 @@ class VideoPlayerActivity : AppCompatActivity(),
     }
 
     private suspend fun play(uri: Uri) = withContext(IO) {
+        videoPlayer_mediaName.text = if (uri.toString().startsWith("content")) {
+            "(?!(.*\\/(?=.+\$))).*".toRegex()
+                .find(uri.lastPathSegment ?: "")?.value
+        } else {
+            uri.toString()
+        }
         player.reset()
         player.setDataSource(this@VideoPlayerActivity, uri)
         player.prepare()
