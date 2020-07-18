@@ -177,8 +177,21 @@ class VideoPlayerActivity : AppCompatActivity(),
         videoPlayer_backBtn.setOnClickListener { onBackPressed() }
     }
 
+    private fun panelToggle(show: Boolean) {
+        if (videoPlayer_overlayTop.alpha != 1f && videoPlayer_overlayTop.alpha != 0f) {
+            return
+        }
+        videoPlayer_overlayTop.animate().apply {
+            alpha(if (show) 1f else 0f)
+        }
+        videoPlayer_overlayBottom.animate().apply {
+            alpha(if (show) 1f else 0f)
+        }
+    }
+
     private fun statusPolling() = launch {
         var time: IntArray
+        var overlayShownMillis = 0
         while (isActive) {
             if (player.isPlaying || player.currentPosition > 0) {
                 videoPlayer_progress.max = player.duration
@@ -186,7 +199,7 @@ class VideoPlayerActivity : AppCompatActivity(),
                 time = splitTime(player.currentPosition)
                 videoPlayer_progressText.text =
                     "${String.format(
-                        "%02d", 
+                        "%02d",
                         time[0]
                     )}:${String.format(
                         "%02d",
@@ -195,10 +208,10 @@ class VideoPlayerActivity : AppCompatActivity(),
                 time = splitTime(player.duration)
                 videoPlayer_durationText.text =
                     "${String.format(
-                        "%02d", 
+                        "%02d",
                         time[0]
                     )}:${String.format(
-                        "%02d", 
+                        "%02d",
                         time[1]
                     )}"
             }
@@ -209,6 +222,12 @@ class VideoPlayerActivity : AppCompatActivity(),
                     android.R.drawable.ic_media_play
                 }
             )
+            if (player.isPlaying) {
+                overlayShownMillis += 200
+            } else {
+                overlayShownMillis = 0
+            }
+            panelToggle(overlayShownMillis < 1500)
             delay(200)
         }
     }

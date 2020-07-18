@@ -28,6 +28,7 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
+        android:id="@+id/videoPlayer_overlayBottom"
         android:background="@color/bg_overlay"
         app:layout_constraintBottom_toBottomOf="parent"
         android:layout_height="wrap_content">
@@ -80,6 +81,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         app:layout_constraintTop_toTopOf="parent"
         android:layout_width="match_parent"
+        android:id="@+id/videoPlayer_overlayTop"
         android:background="@color/bg_overlay"
         android:layout_height="wrap_content">
         <ImageView
