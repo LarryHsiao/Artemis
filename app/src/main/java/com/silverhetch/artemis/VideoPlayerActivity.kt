@@ -1,6 +1,7 @@
 package com.silverhetch.artemis
 
-import android.animation.Animator
+import android.app.Activity
+import android.content.Intent
 import android.media.AudioManager
 import android.media.AudioManager.*
 import android.media.MediaPlayer
@@ -20,14 +21,17 @@ import com.silverhetch.aura.view.activity.brightness.InAppBrightness
 import kotlinx.android.synthetic.main.page_video_player.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers.Main
 import kotlin.math.abs
 
 /**
  * Entry Activity of Artemis.
  */
 class VideoPlayerActivity : AppCompatActivity(),
-    CoroutineScope by CoroutineScope(Dispatchers.Main + SupervisorJob() + errorHandler) {
+    CoroutineScope by CoroutineScope(Main + SupervisorJob() + errorHandler),
+    SurfaceHolder.Callback {
     companion object {
+        const val REQUEST_CODE_PICK_FILE = 1000;
         const val SHOWN_MILLIS = 3000
         val errorHandler = CoroutineExceptionHandler { _, error ->
             error.printStackTrace()
@@ -36,43 +40,61 @@ class VideoPlayerActivity : AppCompatActivity(),
 
     private var player: MediaPlayer = MediaPlayer()
     private var overlayShownMillis = 0
-    private val uri by lazy { intent.data }
+    private var uri: Uri? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        uri = intent.data
         setContentView(R.layout.page_video_player)
-        Fullscreen(this).value()
         playerView()
-        attachDisplay()
         touchEvent()
         statusPolling()
-        launch {
-            uri?.let { play(it) }
+        launch { play() }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Fullscreen(this).value()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        player.pause()
+    }
+
+    private fun togglePlayerView(show: Boolean) {
+        if (show) {
+            videoPlayer_logo.visibility = VISIBLE
+            videoPlayer_logo.setOnClickListener { selectVideo() }
+            videoPlayer_overlayBottom.visibility = GONE
+            videoPlayer_options.visibility = GONE
+        } else {
+            videoPlayer_logo.visibility = GONE
+            videoPlayer_overlayBottom.visibility = VISIBLE
+            videoPlayer_options.visibility = VISIBLE
         }
     }
 
-    private fun attachDisplay() {
-        videoPlayer_display.holder.addCallback(object : SurfaceHolder.Callback {
-            override fun surfaceChanged(
-                holder: SurfaceHolder?,
-                format: Int,
-                width: Int,
-                height: Int
-            ) {
-            }
+    private fun selectVideo() {
+        startActivityForResult(
+            Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                type = "video/*"
+            },
+            REQUEST_CODE_PICK_FILE
+        )
+    }
 
-            override fun surfaceDestroyed(holder: SurfaceHolder?) {}
-
-            override fun surfaceCreated(holder: SurfaceHolder?) {
-                player.setDisplay(videoPlayer_display.holder)
-                player.setOnVideoSizeChangedListener { _, width, height ->
-                    videoPlayer_display.layoutParams =
-                        (videoPlayer_display.layoutParams as ConstraintLayout.LayoutParams).apply {
-                            dimensionRatio = "${width}:${height}"
-                        }
-                }
-            }
-        })
+    override fun onActivityResult(
+        requestCode: Int,
+        resultCode: Int,
+        data: Intent?
+    ) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_CODE_PICK_FILE && resultCode == Activity.RESULT_OK) {
+            togglePlayerView(false)
+            uri = data?.data
+            launch { play() }
+        }
     }
 
     private fun touchEvent() {
@@ -83,6 +105,7 @@ class VideoPlayerActivity : AppCompatActivity(),
             private var dX = 0f
             private var moving = false
             override fun onTouch(v: View?, event: MotionEvent?): Boolean {
+                videoPlayer_optionMenu.visibility = GONE
                 dY = pY - (event?.y ?: 0f)
                 dX = pX - (event?.x ?: 0f)
                 when (event?.actionMasked) {
@@ -157,10 +180,6 @@ class VideoPlayerActivity : AppCompatActivity(),
     }
 
     private fun playerView() {
-        player.setOnBufferingUpdateListener { _, percent ->
-            videoPlayer_progress.secondaryProgress =
-                (videoPlayer_progress.max * (percent / 100f)).toInt()
-        }
         videoPlayer_progress.setOnSeekBarChangeListener(object :
             SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(
@@ -187,6 +206,18 @@ class VideoPlayerActivity : AppCompatActivity(),
                 player.start()
             }
         }
+        videoPlayer_options.setOnClickListener {
+            overlayShownMillis = 0
+            if (videoPlayer_optionMenu.visibility == VISIBLE) {
+                videoPlayer_optionMenu.visibility = GONE
+            } else {
+                videoPlayer_optionMenu.visibility = VISIBLE
+            }
+        }
+        videoPlayer_optionMenu_open.setOnClickListener {
+            videoPlayer_optionMenu.visibility = GONE
+            selectVideo()
+        }
     }
 
     private fun panelToggle(show: Boolean) {
@@ -195,13 +226,13 @@ class VideoPlayerActivity : AppCompatActivity(),
         }
         val newAlpha = if (show) 1f else 0f
         if (videoPlayer_overlayTop.alpha == newAlpha) {
-            if (newAlpha == 0f){
+            if (newAlpha == 0f) {
                 videoPlayer_overlayTop.visibility = GONE
                 videoPlayer_overlayBottom.visibility = GONE
             }
             return
         }
-        if (newAlpha == 1f){
+        if (newAlpha == 1f) {
             videoPlayer_overlayTop.visibility = VISIBLE
             videoPlayer_overlayBottom.visibility = VISIBLE
         }
@@ -262,26 +293,69 @@ class VideoPlayerActivity : AppCompatActivity(),
         return intArrayOf(mm, ss)
     }
 
+    private suspend fun play() {
+        uri?.let { play(it) } ?: togglePlayerView(true)
+    }
+
     private suspend fun play(uri: Uri) = withContext(IO) {
-        videoPlayer_mediaName.text = if (uri.toString().startsWith("content")) {
-            "(?!(.*\\/(?=.+\$))).*".toRegex()
-                .find(uri.lastPathSegment ?: "")?.value
-        } else {
-            uri.toString()
-        }
+        player.pause()
+        player.stop()
         player.reset()
+        player.release()
+        player = MediaPlayer()
         player.setDataSource(this@VideoPlayerActivity, uri)
         player.prepare()
         player.start()
+        player.setOnVideoSizeChangedListener { _, width, height ->
+            videoPlayer_display.layoutParams =
+                (videoPlayer_display.layoutParams as ConstraintLayout.LayoutParams).apply {
+                    dimensionRatio = "${width}:${height}"
+                }
+        }
+        player.setOnBufferingUpdateListener { _, percent ->
+            videoPlayer_progress.secondaryProgress =
+                (videoPlayer_progress.max * (percent / 100f)).toInt()
+        }
+        if (videoPlayer_display.holder.surface.isValid) {
+            player.setDisplay(videoPlayer_display.holder)
+        }
+        videoPlayer_display.holder.addCallback(this@VideoPlayerActivity)
+        launch(Main) { updateTitle(uri) }
     }
 
+    private fun updateTitle(uri: Uri) {
+        videoPlayer_mediaName.text =
+            if (uri.toString().startsWith("content")) {
+                "(?!(.*\\/(?=.+\$))).*".toRegex()
+                    .find(uri.lastPathSegment ?: "")?.value
+            } else {
+                uri.toString()
+            }
+    }
 
     override fun onDestroy() {
         super.onDestroy()
+        videoPlayer_display.holder.removeCallback(this)
         player.stop()
         player.reset()
         player.release()
         cancel()
     }
 
+    override fun surfaceChanged(
+        holder: SurfaceHolder?,
+        format: Int,
+        width: Int,
+        height: Int
+    ) {
+
+    }
+
+    override fun surfaceDestroyed(holder: SurfaceHolder?) {
+        player.setDisplay(null)
+    }
+
+    override fun surfaceCreated(holder: SurfaceHolder?) {
+        player.setDisplay(videoPlayer_display.holder)
+    }
 }
