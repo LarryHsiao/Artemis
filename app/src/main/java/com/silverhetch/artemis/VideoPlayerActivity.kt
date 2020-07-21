@@ -14,6 +14,7 @@ import android.view.View
 import android.view.View.GONE
 import android.view.View.VISIBLE
 import android.widget.SeekBar
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import com.silverhetch.aura.view.activity.Fullscreen
@@ -62,12 +63,13 @@ class VideoPlayerActivity : AppCompatActivity(),
         player.pause()
     }
 
-    private fun togglePlayerView(show: Boolean) {
+    private fun emptyView(show: Boolean) {
         if (show) {
             videoPlayer_logo.visibility = VISIBLE
             videoPlayer_logo.setOnClickListener { selectVideo() }
             videoPlayer_overlayBottom.visibility = GONE
             videoPlayer_options.visibility = GONE
+            videoPlayer_mediaName.text = ""
         } else {
             videoPlayer_logo.visibility = GONE
             videoPlayer_overlayBottom.visibility = VISIBLE
@@ -91,7 +93,7 @@ class VideoPlayerActivity : AppCompatActivity(),
     ) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_CODE_PICK_FILE && resultCode == Activity.RESULT_OK) {
-            togglePlayerView(false)
+            emptyView(false)
             uri = data?.data
             launch { play() }
         }
@@ -105,7 +107,6 @@ class VideoPlayerActivity : AppCompatActivity(),
             private var dX = 0f
             private var moving = false
             override fun onTouch(v: View?, event: MotionEvent?): Boolean {
-                videoPlayer_optionMenu.visibility = GONE
                 dY = pY - (event?.y ?: 0f)
                 dX = pX - (event?.x ?: 0f)
                 when (event?.actionMasked) {
@@ -220,7 +221,7 @@ class VideoPlayerActivity : AppCompatActivity(),
         }
     }
 
-    private fun panelToggle(show: Boolean) {
+    private fun overlayToggle(show: Boolean) {
         if (videoPlayer_overlayTop.alpha != 1f && videoPlayer_overlayTop.alpha != 0f) {
             return
         }
@@ -229,6 +230,7 @@ class VideoPlayerActivity : AppCompatActivity(),
             if (newAlpha == 0f) {
                 videoPlayer_overlayTop.visibility = GONE
                 videoPlayer_overlayBottom.visibility = GONE
+                videoPlayer_optionMenu.visibility = GONE
             }
             return
         }
@@ -236,12 +238,9 @@ class VideoPlayerActivity : AppCompatActivity(),
             videoPlayer_overlayTop.visibility = VISIBLE
             videoPlayer_overlayBottom.visibility = VISIBLE
         }
-        videoPlayer_overlayTop.animate().apply {
-            alpha(newAlpha)
-        }
-        videoPlayer_overlayBottom.animate().apply {
-            alpha(newAlpha)
-        }
+        videoPlayer_overlayTop.animate().alpha(newAlpha)
+        videoPlayer_overlayBottom.animate().alpha(newAlpha)
+        videoPlayer_optionMenu.animate().alpha(newAlpha)
     }
 
     private fun statusPolling() = launch {
@@ -281,7 +280,7 @@ class VideoPlayerActivity : AppCompatActivity(),
             } else {
                 overlayShownMillis = 0
             }
-            panelToggle(overlayShownMillis < SHOWN_MILLIS)
+            overlayToggle(overlayShownMillis < SHOWN_MILLIS)
             delay(200)
         }
     }
@@ -294,7 +293,13 @@ class VideoPlayerActivity : AppCompatActivity(),
     }
 
     private suspend fun play() {
-        uri?.let { play(it) } ?: togglePlayerView(true)
+        try {
+            uri?.let { play(it) } ?: emptyView(true)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(this, R.string.Open_file_failed, Toast.LENGTH_SHORT).show()
+            emptyView(true)
+        }
     }
 
     private suspend fun play(uri: Uri) = withContext(IO) {
@@ -354,6 +359,10 @@ class VideoPlayerActivity : AppCompatActivity(),
     }
 
     override fun surfaceCreated(holder: SurfaceHolder?) {
-        player.setDisplay(videoPlayer_display.holder)
+        try {
+            player.setDisplay(videoPlayer_display.holder)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }
