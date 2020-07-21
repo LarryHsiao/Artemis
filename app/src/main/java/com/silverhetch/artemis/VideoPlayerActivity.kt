@@ -324,13 +324,11 @@ class VideoPlayerActivity : AppCompatActivity(),
     }
 
     private fun updateTitle(uri: Uri) {
-        videoPlayer_mediaName.text =
-            if (uri.toString().startsWith("content")) {
-                "(?!(.*\\/(?=.+\$))).*".toRegex()
-                    .find(uri.lastPathSegment ?: "")?.value
-            } else {
-                uri.toString()
-            }
+        videoPlayer_mediaName.text = if (uri.toString().startsWith("content")) {
+            MediaUriTitle(this, uri).value()
+        } else {
+            UriTitle(uri).value()
+        }
     }
 
     override fun onDestroy() {
