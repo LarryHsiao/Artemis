@@ -32,8 +32,9 @@ class VideoPlayerActivity : AppCompatActivity(),
     CoroutineScope by CoroutineScope(Main + SupervisorJob() + errorHandler),
     SurfaceHolder.Callback {
     companion object {
-        const val REQUEST_CODE_PICK_FILE = 1000;
+        const val REQUEST_CODE_PICK_FILE = 1000
         const val SHOWN_MILLIS = 3000
+        const val POLLING_DURATION = 200L
         val errorHandler = CoroutineExceptionHandler { _, error ->
             error.printStackTrace()
         }
@@ -246,42 +247,40 @@ class VideoPlayerActivity : AppCompatActivity(),
     private fun statusPolling() = launch {
         var time: IntArray
         while (isActive) {
+            if (!isInitialized()){
+                delay(POLLING_DURATION)
+                continue
+            }
             if (player.isPlaying || player.currentPosition > 0) {
                 videoPlayer_progress.max = player.duration
                 videoPlayer_progress.progress = player.currentPosition
                 time = splitTime(player.currentPosition)
-                videoPlayer_progressText.text =
-                    "${String.format(
-                        "%02d",
-                        time[0]
-                    )}:${String.format(
-                        "%02d",
-                        time[1]
-                    )}"
+                videoPlayer_progressText.text = "${formatTime(time[0])}:${formatTime(time[1])}"
                 time = splitTime(player.duration)
-                videoPlayer_durationText.text =
-                    "${String.format(
-                        "%02d",
-                        time[0]
-                    )}:${String.format(
-                        "%02d",
-                        time[1]
-                    )}"
+                videoPlayer_durationText.text = "${formatTime(time[0])}:${formatTime(time[1])}"
             }
-            videoPlayer_playbackBtn.setImageResource(
-                if (player.isPlaying) {
-                    R.drawable.ic_pause
-                } else {
-                    R.drawable.ic_play
-                }
-            )
             if (player.isPlaying) {
                 overlayShownMillis += 200
+                videoPlayer_playbackBtn.setImageResource(R.drawable.ic_pause)
             } else {
                 overlayShownMillis = 0
+                videoPlayer_playbackBtn.setImageResource(R.drawable.ic_play)
             }
             overlayToggle(overlayShownMillis < SHOWN_MILLIS)
-            delay(200)
+            delay(POLLING_DURATION)
+        }
+    }
+
+    private fun formatTime(input: Int): String {
+        return String.format("%02d", input);
+    }
+
+    private fun isInitialized(): Boolean {
+        return try {
+            player.isPlaying
+            true
+        } catch (e: Exception) {
+            false
         }
     }
 

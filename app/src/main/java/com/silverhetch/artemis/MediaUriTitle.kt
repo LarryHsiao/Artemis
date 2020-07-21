@@ -2,7 +2,7 @@ package com.silverhetch.artemis
 
 import android.content.Context
 import android.net.Uri
-import android.provider.MediaStore
+import android.provider.MediaStore.MediaColumns.DISPLAY_NAME
 import com.silverhetch.clotho.Source
 
 /**
@@ -13,9 +13,9 @@ class MediaUriTitle(
     private val uri: Uri
 ) : Source<String> {
     override fun value(): String = context.contentResolver.query(
-        uri, arrayOf(MediaStore.MediaColumns.DISPLAY_NAME), null, null, null
+        uri, arrayOf(DISPLAY_NAME), null, null, null
     )?.use { query ->
         query.moveToFirst()
-        return query.getString(query.getColumnIndex(MediaStore.MediaColumns.DISPLAY_NAME)) ?: ""
+        return query.getString(query.getColumnIndex(DISPLAY_NAME)) ?: ""
     } ?: ""
 }

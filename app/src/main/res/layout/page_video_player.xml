@@ -140,7 +140,7 @@
               android:background="?attr/selectableItemBackground"
               android:drawableTop="@mipmap/ic_launcher_foreground"
               app:layout_constraintStart_toStartOf="parent"
-              app:layout_constraintTop_toBottomOf="@id/videoPlayer_overlayTop"
+              app:layout_constraintTop_toTopOf="parent"
               android:textColor="#fff"
               android:textAppearance="@style/TextAppearance.AppCompat.Title"
               android:gravity="center"
