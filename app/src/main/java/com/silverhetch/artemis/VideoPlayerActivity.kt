@@ -17,6 +17,7 @@ import android.widget.SeekBar
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
+import com.silverhetch.artemis.VideoPlayerActivity.TouchControlMode.*
 import com.silverhetch.aura.view.activity.Fullscreen
 import com.silverhetch.aura.view.activity.brightness.InAppBrightness
 import kotlinx.android.synthetic.main.page_video_player.*
@@ -31,6 +32,10 @@ import kotlin.math.abs
 class VideoPlayerActivity : AppCompatActivity(),
     CoroutineScope by CoroutineScope(Main + SupervisorJob() + errorHandler),
     SurfaceHolder.Callback {
+    enum class TouchControlMode {
+        VOLUME, BRIGHTNESS, PROGRESS
+    }
+
     companion object {
         const val REQUEST_CODE_PICK_FILE = 1000
         const val SHOWN_MILLIS = 3000
@@ -107,23 +112,34 @@ class VideoPlayerActivity : AppCompatActivity(),
             private var dY = 0f
             private var dX = 0f
             private var moving = false
+            private var downAtRight = false
+            private var touchControlMode: TouchControlMode? = null
             override fun onTouch(v: View?, event: MotionEvent?): Boolean {
                 dY = pY - (event?.y ?: 0f)
                 dX = pX - (event?.x ?: 0f)
                 when (event?.actionMasked) {
                     ACTION_DOWN -> {
+                        touchControlMode = null
                         moving = false
+                        downAtRight = event.x > (videoPlayer_root.width / 2f)
                     }
                     ACTION_MOVE -> {
                         if (abs(dY) > 10) {
-                            if (event.x > (videoPlayer_root.width / 2f)) {
-                                volumeAdjustment(dY)
+                            if (downAtRight) {
+                                if (touchControlMode == VOLUME || touchControlMode == null) {
+                                    touchControlMode = VOLUME
+                                    volumeAdjustment(dY)
+                                }
                             } else {
-                                brightnessAdjustment(dY)
+                                if (touchControlMode == BRIGHTNESS || touchControlMode == null) {
+                                    touchControlMode = BRIGHTNESS
+                                    brightnessAdjustment(dY)
+                                }
                             }
                             moving = true
                         }
-                        if (abs(dX) > 10) {
+                        if (abs(dX) > 10 && (touchControlMode == PROGRESS || touchControlMode == null)) {
+                            touchControlMode = PROGRESS
                             seekToNextBlock(dX)
                             moving = true
                         }
@@ -137,6 +153,7 @@ class VideoPlayerActivity : AppCompatActivity(),
                             }
                             v?.performClick()
                         }
+                        touchControlMode = null
                     }
                     else -> {
                     }
@@ -247,7 +264,7 @@ class VideoPlayerActivity : AppCompatActivity(),
     private fun statusPolling() = launch {
         var time: IntArray
         while (isActive) {
-            if (!isInitialized()){
+            if (!isInitialized()) {
                 delay(POLLING_DURATION)
                 continue
             }
