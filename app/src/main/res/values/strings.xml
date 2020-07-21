@@ -3,4 +3,6 @@
     <string name="Player">Player</string>
     <string name="Open_a_File">Open a File</string>
     <string name="Open_file_failed">Open file failed</string>
+    <string name="emoji_volume" translatable="false">&#x1F50A;</string>
+    <string name="emoji_brightness" translatable="false">&#x1F506;</string>
 </resources>

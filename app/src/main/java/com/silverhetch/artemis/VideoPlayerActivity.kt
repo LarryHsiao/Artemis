@@ -2,8 +2,10 @@ package com.silverhetch.artemis
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Color
 import android.media.AudioManager
-import android.media.AudioManager.*
+import android.media.AudioManager.FLAG_PLAY_SOUND
+import android.media.AudioManager.STREAM_MUSIC
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Bundle
@@ -15,6 +17,7 @@ import android.view.View.GONE
 import android.view.View.VISIBLE
 import android.widget.SeekBar
 import android.widget.Toast
+import androidx.annotation.ColorInt
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import com.silverhetch.artemis.VideoPlayerActivity.TouchControlMode.*
@@ -25,6 +28,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /**
  * Entry Activity of Artemis.
@@ -38,15 +42,17 @@ class VideoPlayerActivity : AppCompatActivity(),
 
     companion object {
         const val REQUEST_CODE_PICK_FILE = 1000
-        const val SHOWN_MILLIS = 3000
+        const val SHOWN_MILLIS = 3000L
         const val POLLING_DURATION = 200L
+        const val THRESHOLD_MOVE = 10
         val errorHandler = CoroutineExceptionHandler { _, error ->
             error.printStackTrace()
         }
     }
 
     private var player: MediaPlayer = MediaPlayer()
-    private var overlayShownMillis = 0
+    private var overlayShownMillis = 0L
+    private var controllerShownMillis = POLLING_DURATION
     private var uri: Uri? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -124,32 +130,34 @@ class VideoPlayerActivity : AppCompatActivity(),
                         downAtRight = event.x > (videoPlayer_root.width / 2f)
                     }
                     ACTION_MOVE -> {
-                        if (abs(dY) > 10) {
+                        if (abs(dY) > THRESHOLD_MOVE) {
                             if (downAtRight) {
                                 if (touchControlMode == VOLUME || touchControlMode == null) {
                                     touchControlMode = VOLUME
-                                    volumeAdjustment(dY)
                                 }
                             } else {
                                 if (touchControlMode == BRIGHTNESS || touchControlMode == null) {
                                     touchControlMode = BRIGHTNESS
-                                    brightnessAdjustment(dY)
                                 }
                             }
                             moving = true
                         }
-                        if (abs(dX) > 10 && (touchControlMode == PROGRESS || touchControlMode == null)) {
+                        if (abs(dX) > THRESHOLD_MOVE && (touchControlMode == PROGRESS || touchControlMode == null)) {
                             touchControlMode = PROGRESS
-                            seekToNextBlock(dX)
                             moving = true
+                        }
+                        when (touchControlMode) {
+                            VOLUME -> volumeAdjustment(dY)
+                            BRIGHTNESS -> brightnessAdjustment(dY)
+                            PROGRESS -> seekToNextBlock(dX)
                         }
                     }
                     ACTION_UP -> {
                         if (!moving) {
-                            if (overlayShownMillis > SHOWN_MILLIS) {
-                                overlayShownMillis = 0
+                            overlayShownMillis = if (overlayShownMillis > SHOWN_MILLIS) {
+                                0
                             } else {
-                                overlayShownMillis = SHOWN_MILLIS
+                                SHOWN_MILLIS
                             }
                             v?.performClick()
                         }
@@ -181,40 +189,64 @@ class VideoPlayerActivity : AppCompatActivity(),
     private fun volumeAdjustment(fl: Float) {
         val mgr =
             applicationContext.getSystemService(AUDIO_SERVICE) as AudioManager
-        if (fl > 0) {
-            mgr.adjustVolume(ADJUST_RAISE, FLAG_PLAY_SOUND)
-        } else {
-            mgr.adjustVolume(ADJUST_LOWER, FLAG_PLAY_SOUND)
-        }
+        mgr.setStreamVolume(
+            STREAM_MUSIC,
+            if (fl > 0) {
+                mgr.getStreamVolume(STREAM_MUSIC) + 0.6
+            } else {
+                mgr.getStreamVolume(STREAM_MUSIC) - 0.6
+            }.roundToInt(),
+            FLAG_PLAY_SOUND
+        )
+        showIndicator(
+            mgr.getStreamVolume(STREAM_MUSIC) / mgr.getStreamMaxVolume(STREAM_MUSIC).toFloat(),
+            getString(R.string.emoji_volume),
+            Color.parseColor("#B6DCFB")
+        )
     }
 
     private fun brightnessAdjustment(fl: Float) {
         InAppBrightness(this@VideoPlayerActivity).apply {
             if (fl > 0) {
-                set(value() + 0.2f)
+                set(value() + 0.02f)
             } else {
-                set(value() - 0.2f)
+                set(value() - 0.02f)
             }
+            showIndicator(
+                value(),
+                getString(R.string.emoji_brightness),
+                Color.parseColor("#FFA438")
+            )
         }
+    }
+
+    private fun showIndicator(percentage: Float, innerText: String, @ColorInt color: Int) {
+        controllerShownMillis = 0
+        videoPlayer_indicator.percentage = percentage * 100
+        videoPlayer_indicator.setInnerText(innerText)
+        videoPlayer_indicator.setPercentageBackgroundColor(color)
     }
 
     private fun playerView() {
         videoPlayer_progress.setOnSeekBarChangeListener(object :
             SeekBar.OnSeekBarChangeListener {
+            var touched = false
             override fun onProgressChanged(
                 seekBar: SeekBar?,
                 progress: Int,
                 fromUser: Boolean
             ) {
-                if (fromUser) {
+                if (fromUser && touched) {
                     player.seekTo(progress)
                 }
             }
 
             override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                touched = true
             }
 
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                touched = false
             }
         })
         videoPlayer_backBtn.setOnClickListener { onBackPressed() }
@@ -239,20 +271,34 @@ class VideoPlayerActivity : AppCompatActivity(),
         }
     }
 
+    private fun controllerToggle(show: Boolean) {
+        if (videoPlayer_indicator.alpha != 1f && videoPlayer_indicator.alpha != 0f) {
+            return
+        }
+        val newAlpha = if (show) 1f else 0f
+        if (videoPlayer_indicator.alpha == newAlpha) {
+            return
+        }
+        if (show) {
+            videoPlayer_indicator.visibility = VISIBLE
+        }
+        videoPlayer_indicator.animate().alpha(newAlpha)
+    }
+
     private fun overlayToggle(show: Boolean) {
         if (videoPlayer_overlayTop.alpha != 1f && videoPlayer_overlayTop.alpha != 0f) {
             return
         }
         val newAlpha = if (show) 1f else 0f
         if (videoPlayer_overlayTop.alpha == newAlpha) {
-            if (newAlpha == 0f) {
+            if (!show) {
                 videoPlayer_overlayTop.visibility = GONE
                 videoPlayer_overlayBottom.visibility = GONE
                 videoPlayer_optionMenu.visibility = GONE
             }
             return
         }
-        if (newAlpha == 1f) {
+        if (show) {
             videoPlayer_overlayTop.visibility = VISIBLE
             videoPlayer_overlayBottom.visibility = VISIBLE
         }
@@ -277,13 +323,15 @@ class VideoPlayerActivity : AppCompatActivity(),
                 videoPlayer_durationText.text = "${formatTime(time[0])}:${formatTime(time[1])}"
             }
             if (player.isPlaying) {
-                overlayShownMillis += 200
+                overlayShownMillis += POLLING_DURATION
                 videoPlayer_playbackBtn.setImageResource(R.drawable.ic_pause)
             } else {
                 overlayShownMillis = 0
                 videoPlayer_playbackBtn.setImageResource(R.drawable.ic_play)
             }
+            controllerShownMillis += POLLING_DURATION
             overlayToggle(overlayShownMillis < SHOWN_MILLIS)
+            controllerToggle(controllerShownMillis < (SHOWN_MILLIS / 2))
             delay(POLLING_DURATION)
         }
     }
