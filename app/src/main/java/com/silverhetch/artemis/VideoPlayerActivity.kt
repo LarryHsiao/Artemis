@@ -1,6 +1,7 @@
 package com.silverhetch.artemis
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.media.AudioManager
@@ -21,8 +22,11 @@ import androidx.annotation.ColorInt
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import com.silverhetch.artemis.VideoPlayerActivity.TouchControlMode.*
+import com.silverhetch.aura.storage.SPCeres
 import com.silverhetch.aura.view.activity.Fullscreen
+import com.silverhetch.aura.view.activity.brightness.Brightness
 import com.silverhetch.aura.view.activity.brightness.InAppBrightness
+import com.silverhetch.clotho.storage.Ceres
 import kotlinx.android.synthetic.main.page_video_player.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
@@ -50,6 +54,8 @@ class VideoPlayerActivity : AppCompatActivity(),
         }
     }
 
+    private val pref: Ceres by lazy { SPCeres(getSharedPreferences("pref", Context.MODE_PRIVATE)) }
+    private val brightness: Brightness by lazy { InAppBrightness(this@VideoPlayerActivity) }
     private var player: MediaPlayer = MediaPlayer()
     private var overlayShownMillis = 0L
     private var controllerShownMillis = POLLING_DURATION
@@ -68,11 +74,13 @@ class VideoPlayerActivity : AppCompatActivity(),
     override fun onResume() {
         super.onResume()
         Fullscreen(this).value()
+        brightness.set(pref.get("brightness").toFloatOrNull() ?: 0.5f)
     }
 
     override fun onPause() {
         super.onPause()
         player.pause()
+        pref.store("brightness", "" + brightness.value())
     }
 
     private fun emptyView(show: Boolean) {
@@ -206,7 +214,7 @@ class VideoPlayerActivity : AppCompatActivity(),
     }
 
     private fun brightnessAdjustment(fl: Float) {
-        InAppBrightness(this@VideoPlayerActivity).apply {
+        brightness.apply {
             if (fl > 0) {
                 set(value() + 0.02f)
             } else {
