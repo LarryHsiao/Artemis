@@ -3,7 +3,7 @@ package com.silverhetch.artemis
 import android.content.Context
 import android.net.Uri
 import android.provider.MediaStore.MediaColumns.DISPLAY_NAME
-import com.silverhetch.clotho.Source
+import com.larryhsiao.clotho.Source
 
 /**
  * Source to build media title from given content:// uri.

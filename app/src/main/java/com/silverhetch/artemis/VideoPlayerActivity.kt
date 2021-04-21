@@ -21,12 +21,12 @@ import android.widget.Toast
 import androidx.annotation.ColorInt
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
+import com.larryhsiao.clotho.storage.Ceres
 import com.silverhetch.artemis.VideoPlayerActivity.TouchControlMode.*
 import com.silverhetch.aura.storage.SPCeres
 import com.silverhetch.aura.view.activity.Fullscreen
 import com.silverhetch.aura.view.activity.brightness.Brightness
 import com.silverhetch.aura.view.activity.brightness.InAppBrightness
-import com.silverhetch.clotho.storage.Ceres
 import kotlinx.android.synthetic.main.page_video_player.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
